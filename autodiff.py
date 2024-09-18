@@ -1,0 +1,188 @@
+#----------------------------------------------------------------
+# File:     autodiff.py
+#----------------------------------------------------------------
+#
+# Author:   Marek Rychlik (rychlik@arizona.edu)
+# Date:     Sat Sep  7 08:11:18 2024
+# Copying:  (C) Marek Rychlik, 2020. All rights reserved.
+# 
+#----------------------------------------------------------------
+# A simple autodifferentiation package
+import numpy as np
+from multimethod import multimethod
+
+class Variable:
+    def __init__(self, value, derivative=1.0):
+        self.value = value
+        self.derivative = derivative
+
+    def __add__(self, other):
+        if isinstance(other, Variable):
+            return Variable(self.value + other.value, self.derivative + other.derivative)
+        else:
+            return Variable(self.value + other, self.derivative)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, Variable):
+            return Variable(self.value - other.value, self.derivative - other.derivative)
+        else:
+            return Variable(self.value - other, self.derivative)
+
+    def __rsub__(self, other):
+        return Variable(other - self.value, -self.derivative)
+
+
+    def __mul__(self, other):
+        if isinstance(other, Variable):
+            return Variable(self.value * other.value, self.value * other.derivative + self.derivative * other.value)
+        else:
+            return Variable(self.value * other, self.derivative * other)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        if isinstance(other, Variable):
+            return Variable(self.value / other.value,
+                            (self.derivative * other.value - self.value * other.derivative) / (other.value ** 2))
+        else:
+            return Variable(self.value / other, self.derivative / other)
+
+    def __rtruediv__(self, other):
+        return Variable(other / self.value, -other * self.derivative / (self.value ** 2))
+
+    def __pow__(self, power):
+        return Variable(self.value ** power, power * self.value ** (power - 1) * self.derivative)
+
+    def sin(self):
+        return Variable(np.sin(self.value), np.cos(self.value) * self.derivative)
+
+    def cos(self):
+        return Variable(np.cos(self.value), -np.sin(self.value) * self.derivative)
+
+    def exp(self):
+        return Variable(np.exp(self.value), np.exp(self.value) * self.derivative)
+
+    def sqrt(self):
+        return Variable(np.sqrt(self.value), self.derivative / (2 * np.sqrt(self.value)))
+
+    def to_pair(self):
+        return self.value, self.derivative
+
+@multimethod
+def sqrt(x : float|int):
+    return np.sqrt(x)
+
+@multimethod
+def sqrt(x : Variable):
+    return x.sqrt()
+
+class Constant(Variable):
+    def __init__(self, value):
+        super().__init__(value, 0.0)
+
+def autodiff(f):
+    def g(x):
+        xx = Variable(x)
+        yy = f(xx)
+        return yy.to_pair()
+
+    return g
+
+def gateaux(f):
+    def wrapper(*args, **kwargs):
+        direction = kwargs.get('direction')
+        del kwargs['direction']
+        vargs = [Variable(arg, incr) for arg, incr in zip(args, direction)]
+        val = f(*vargs, **kwargs)
+        return val.to_pair()
+
+    return wrapper
+
+
+def standard_basis(n):
+    for i in range(n):
+        yield tuple(1 if j == i else 0 for j in range(n))
+
+def gradient(f):
+    g = gateaux(f)
+    def wrapper(*args, **kwargs):
+        n = len(args)
+        partials = [g(*args, **kwargs, direction=v) for v in standard_basis(n)]
+        val = partials[0][0]
+        return val, tuple([p[1] for p in partials])
+
+    return wrapper
+
+def abs(self):
+    #decide later whether I wnat this to take the abs of the derivative as well
+    if self.value >= 0:
+        return Variable(self.value, self.derivative)
+    else:
+        return Variable(-1*self.value, self.derivative)
+
+#need to adjust these after redefining abs for class Variable
+def max(arg1, *args):
+    if isinstance(arg1, Variable):
+        max = arg1.value
+    else:
+        max = arg1
+    for arg in args:
+        if isinstance(arg, Variable):
+            arg = arg.value
+        max = ((max +arg) + abs(max-arg))/2
+    return max
+
+def min(arg1, *args):
+    if isinstance(arg1, Variable):
+        min = arg1.value
+    else:
+        min = arg1
+    for arg in args:
+        if isinstance(arg, Variable):
+            arg = arg.value
+        min = ((min +arg) - abs(min-arg))/2
+    return min
+
+
+if __name__ == '__main__':
+    print('min:', min(Variable(1), -1, Variable(-8)))
+    print('max:', max(Variable(1),Variable(14),7))
+    """
+    # Example usage:
+    x = Variable(2.0)
+    y = x**2 + 3*x + 2
+
+    print(f"Value of expression: {y.value}")
+    print(f"Derivative of expression: {y.derivative}")
+
+    # Function of 1 variable that "knows how to differentiate itself"
+    @autodiff
+    def f(x):
+        y = x**2 + 3*x + 2
+        return y
+
+    y, dy = f(2.0)
+    print(f"Value of function: {y}")
+    print(f"Derivative of function: {dy}")
+
+    # Function of 2 variables that "knows how to find its directional derivative"
+    @gateaux
+    def g(x, y):
+        z = x**2 + 3*x*y
+        return z
+    
+    z, dz = g(1, 2, direction=(1, 2))
+    print(f"Value: {z}, Gateaux derivative in direction {(1, 2)}: {dz}")
+
+    # Function of 2 variables that "knows how to find its gradient"
+    @gradient
+    def g(x, y):
+        z = x**2 + 3*x*y
+        return z
+    val, grad = g(1, 2)
+    print(f"Value: {val}, Gradient: {grad}")
+    """
