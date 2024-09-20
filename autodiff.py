@@ -71,6 +71,12 @@ class Variable:
 
     def to_pair(self):
         return self.value, self.derivative
+    
+    def abs(self):
+        if self.value < 0:
+            self.value  = -1*self.value
+            self.derivative = -1*self.derivative
+        return Variable(self.value, self.derivative)
 
 @multimethod
 def sqrt(x : float|int):
@@ -117,15 +123,26 @@ def gradient(f):
 
     return wrapper
 
-def abs(self):
+def abs(x):
     #decide later whether I wnat this to take the abs of the derivative as well
-    if self.value >= 0:
-        return Variable(self.value, self.derivative)
+    #9/18 update using sqrt multimethod above
+
+    #if self.value >= 0:
+    #    return Variable(self.value, self.derivative)
+    #else:
+    #    return Variable(-1*self.value, self.derivative)
+    if isinstance(x, Variable):
+        return x.abs()
     else:
-        return Variable(-1*self.value, self.derivative)
+        return np.abs(x)
 
 #need to adjust these after redefining abs for class Variable
 def max(arg1, *args):
+    max = arg1
+    for arg in args:
+        max = ((max +arg) + abs(max-arg))/2
+    return max
+    """
     if isinstance(arg1, Variable):
         max = arg1.value
     else:
@@ -135,8 +152,14 @@ def max(arg1, *args):
             arg = arg.value
         max = ((max +arg) + abs(max-arg))/2
     return max
-
+    """
 def min(arg1, *args):
+    min = arg1
+    print(type(args))
+    for arg in args:
+        min = ((min +arg) - abs(min-arg))/2
+    return min
+    """
     if isinstance(arg1, Variable):
         min = arg1.value
     else:
@@ -146,11 +169,13 @@ def min(arg1, *args):
             arg = arg.value
         min = ((min +arg) - abs(min-arg))/2
     return min
+    """
 
 
 if __name__ == '__main__':
-    print('min:', min(Variable(1), -1, Variable(-8)))
-    print('max:', max(Variable(1),Variable(14),7))
+    print('min:', min(Variable(1), Variable(-1), Variable(-8)))
+    print('min:', min(1, -1,))
+    #print('max:', max(Variable(1),Variable(14),7))
     """
     # Example usage:
     x = Variable(2.0)
