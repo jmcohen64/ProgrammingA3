@@ -92,6 +92,7 @@ class Constant(Variable):
 
 def autodiff(f):
     def g(x):
+        print(x)
         xx = Variable(x)
         yy = f(xx)
         return yy.to_pair()
@@ -124,7 +125,6 @@ def gradient(f):
     return wrapper
 
 def abs(x):
-    #decide later whether I wnat this to take the abs of the derivative as well
     #9/18 update using sqrt multimethod above
 
     #if self.value >= 0:
@@ -136,7 +136,7 @@ def abs(x):
     else:
         return np.abs(x)
 
-#need to adjust these after redefining abs for class Variable
+#prof wants these as recursion
 def max(arg1, *args):
     max = arg1
     for arg in args:
@@ -155,7 +155,7 @@ def max(arg1, *args):
     """
 def min(arg1, *args):
     min = arg1
-    print(type(args))
+    #print(type(args))
     for arg in args:
         min = ((min +arg) - abs(min-arg))/2
     return min
@@ -173,10 +173,18 @@ def min(arg1, *args):
 
 
 if __name__ == '__main__':
-    print('min:', min(Variable(1), Variable(-1), Variable(-8)))
+    f = lambda x: x**2 + 3*x + 2
+    g = autodiff(f)
+    print(g)
+    y, dy = g(2.0)
+    print(f"Value: {y}, Derivative:{dy}")
+
+    """
+    print('min:', min(8, -5, Variable(-8)))
     print('min:', min(1, -1,))
     #print('max:', max(Variable(1),Variable(14),7))
-    """
+
+
     # Example usage:
     x = Variable(2.0)
     y = x**2 + 3*x + 2
