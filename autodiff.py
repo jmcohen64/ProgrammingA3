@@ -92,7 +92,7 @@ class Constant(Variable):
 
 def autodiff(f):
     def g(x):
-        print(x)
+        #print(x)
         xx = Variable(x)
         yy = f(xx)
         return yy.to_pair()
@@ -132,6 +132,7 @@ def abs(x):
     #else:
     #    return Variable(-1*self.value, self.derivative)
     if isinstance(x, Variable):
+        #print(x, type(x),x.value)
         return x.abs()
     else:
         return np.abs(x)
@@ -173,17 +174,18 @@ def min(arg1, *args):
 
 
 if __name__ == '__main__':
+    """
     f = lambda x: x**2 + 3*x + 2
     g = autodiff(f)
     print(g)
     y, dy = g(2.0)
     print(f"Value: {y}, Derivative:{dy}")
 
-    """
+    
     print('min:', min(8, -5, Variable(-8)))
     print('min:', min(1, -1,))
     #print('max:', max(Variable(1),Variable(14),7))
-
+    
 
     # Example usage:
     x = Variable(2.0)
@@ -191,7 +193,7 @@ if __name__ == '__main__':
 
     print(f"Value of expression: {y.value}")
     print(f"Derivative of expression: {y.derivative}")
-
+    
     # Function of 1 variable that "knows how to differentiate itself"
     @autodiff
     def f(x):
@@ -201,21 +203,24 @@ if __name__ == '__main__':
     y, dy = f(2.0)
     print(f"Value of function: {y}")
     print(f"Derivative of function: {dy}")
-
+    
     # Function of 2 variables that "knows how to find its directional derivative"
     @gateaux
-    def g(x, y):
-        z = x**2 + 3*x*y
+    def g(x):
+        z = x**2 + 3*x
         return z
     
-    z, dz = g(1, 2, direction=(1, 2))
-    print(f"Value: {z}, Gateaux derivative in direction {(1, 2)}: {dz}")
-
+    z, dz = g(1, direction=(1,))
+    print(f"Value: {z}, Gateaux derivative in direction {(1)}: {dz}")
+    """
     # Function of 2 variables that "knows how to find its gradient"
     @gradient
-    def g(x, y):
-        z = x**2 + 3*x*y
-        return z
-    val, grad = g(1, 2)
+    def g(x,y):
+        return max(5*x**2+y**2 + 3*x + 5*y, 3*(x-1)**2 + 3*(y-2)**2 + 3*x*y)
+    val, grad = g(-1.5)
     print(f"Value: {val}, Gradient: {grad}")
-    """
+    
+
+    
+    
+    
