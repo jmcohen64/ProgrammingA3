@@ -119,7 +119,10 @@ def gradient(f):
     def wrapper(*args, **kwargs):
         n = len(args)
         partials = [g(*args, **kwargs, direction=v) for v in standard_basis(n)]
+        #print(len(partials))
         val = partials[0][0]
+        if len(partials) == 1:
+            return val, partials[0][1]
         return val, tuple([p[1] for p in partials])
 
     return wrapper
@@ -174,7 +177,7 @@ def min(arg1, *args):
 
 
 if __name__ == '__main__':
-    """
+
     f = lambda x: x**2 + 3*x + 2
     g = autodiff(f)
     print(g)
@@ -184,7 +187,7 @@ if __name__ == '__main__':
     
     print('min:', min(8, -5, Variable(-8)))
     print('min:', min(1, -1,))
-    #print('max:', max(Variable(1),Variable(14),7))
+    print('max:', max(Variable(1),Variable(14),7))
     
 
     # Example usage:
@@ -212,12 +215,12 @@ if __name__ == '__main__':
     
     z, dz = g(1, direction=(1,))
     print(f"Value: {z}, Gateaux derivative in direction {(1)}: {dz}")
-    """
+
     # Function of 2 variables that "knows how to find its gradient"
     @gradient
     def g(x,y):
         return max(5*x**2+y**2 + 3*x + 5*y, 3*(x-1)**2 + 3*(y-2)**2 + 3*x*y)
-    val, grad = g(-1.5)
+    val, grad = g(1,2)
     print(f"Value: {val}, Gradient: {grad}")
     
 

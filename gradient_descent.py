@@ -41,30 +41,95 @@ def find_global_minimum(f, x0, learning_rate=0.1, tol=1e-6):
       x0/2
    except TypeError:
       multi  = True
-       
-   fxn, grad = f(*x0)
-   grad = numpy.array(grad)
+
+   fxn, grad = func(f,x0,multi)
+
    xn1 = x0 - learning_rate*grad
-   fxn1, grad1 = f(*xn1)
-   #print(x0, fxn, grad, xn1, fxn1)
+
+   fxn1, grad1 = func(f, xn1, multi)
+   """
+   if multi == True:   
+         fxn_i, grad_i = f(*x0)
+      else:
+         fxn_i, grad_i = f(x0)
+      grad_i = numpy.array(grad_i)
+
+   if multi == True:
+      fxn1_i, grad1_i = f(*xn1)
+   else:
+      fxn1_i, grad1_i = f(xn1)
+   print(fxn1,fxn1_i, grad1, grad1_i)
+   """
    diff = autodiff.abs(fxn - fxn1)
    iter = 1
-   divisor = 1
-   while diff > tol:
+   #divisor = 1
+   while (diff > tol) & (numpy.dot(grad,grad) > tol):
       xn = xn1
-      fxn, grad = f(*xn)
-      xn1 = xn - (learning_rate/divisor)*grad[0]
-      fxn1, grad1 = f(*xn1)
+      fxn = fxn1
+      grad = grad1
+      #fxn, grad = func(f,xn,multi)
+      #if multi == True:   
+      #   fxn_i, grad_i = f(*xn)
+      #else:
+      #   fxn_i, grad_i = f(xn)
+      #fxn, grad = f(*xn)
+      #print(type(grad))
+      #grad_i = numpy.array(grad_i)
+      
+      #if iter%5 == 0:
+      #   print(fxn,fxn_i, grad, grad_i)
+      
+      xn1 = xn - (learning_rate)*grad
+      fxn1, grad1 = func(f, xn1, multi)
+      divisor = 1
+      #if (numpy.dot(grad, grad) > numpy.dot(grad1,grad1)):
+      while fxn1 > fxn:
+         xn1 = xn - (learning_rate/divisor)*grad
+         fxn1, grad1 = func(f, xn1, multi)
+         divisor *= 100
+      #if multi == True:
+      #   fxn1, grad1 = f(*xn1)
+      #else:
+      #   fxn1, grad1 = f(xn1)
+      #grad1 = numpy.array(grad1)
+      #fxn1, grad1 = f(*xn1)
       diff = autodiff.abs(fxn - fxn1)
-      #print(xn1,diff, grad, grad1)
+
+      #print(xn,fxn, xn1, fxn1)
       iter += 1
-      if grad[0]*grad1[0] < 0:
+      """
+      flip = False
+      if multi == True:
+         #print(grad, grad1, len(grad))
+         for i in range(len(grad)):
+            if grad[i]*grad1[i]:
+               flip = True
+      elif grad*grad1 < 0:
+         flip = True
+      if flip ==  True:
          divisor = divisor*5
-      if iter > 500:
+      """
+      #if iter > 500:
          #print('i give up')
-         return xn1, fxn1
+         #return xn1, fxn1
    return xn1, fxn1
 
+def func(f, x, multi):
+   #F function that returns the value of the function f and its gradient at x.
+   #VAriable multi determines if x is a single variable or a point of several variables
+   #gradients is returned as a numpy.array
+   if multi == True:   
+      fxn, grad = f(*x)
+      #print(fxn, grad)
+      return fxn, numpy.array(grad)
+   else:
+      fxn, grad = f(x)
+      #print(fxn, grad)
+      return fxn, numpy.array(grad)
+   
+def strictly_less(x0, x1, fx0, fx1, multi):
+   #i want to compute the next one, but if it comes out greater than the input, try again
+   return 
 
 if __name__ == '__main__':
    
@@ -76,7 +141,7 @@ if __name__ == '__main__':
    
    min = find_global_minimum(f,x0)
    
-   print(min)
+   #print(min)
    #print(f(-1.5))
    
    @autodiff.gradient
@@ -84,7 +149,7 @@ if __name__ == '__main__':
       return autodiff.max(5*x**2+3*x, 2*x**2-5*x + 7, (x-1)**2+5)
       #return (x-1)**2+5
    y, grad = f(-1)
-   #print('f_max(-1) = ', y)
+   print(y,grad)
 
    x0 = 0
    learning_rate = 0.05
@@ -93,6 +158,11 @@ if __name__ == '__main__':
    x, y = find_global_minimum(f, x0, learning_rate, tol)
    
    print(f'Global minimum: {x}, Function value: {y}')
+
+   #Check if x and y are good
+   y_ref = 5.0625
+   #print(y, y_ref, type(y),type(y_ref), y- y_ref)
+   assert(y <= y_ref + tol)
    
    @autodiff.gradient
    def g(x, y):
@@ -100,7 +170,7 @@ if __name__ == '__main__':
 
    x0 = (1,2)
    y, grad = g(*x0)
-   #print(y, grad)
+   print(y, grad)
 
    x0 = (0,0)
    learning_rate = 0.05
@@ -108,5 +178,9 @@ if __name__ == '__main__':
    x, y = find_global_minimum(g, x0, learning_rate, tol)
 
    print(f'Global minimum: {x}, Function value: {y}')
+
+   # Check if x and y are good
+   y_ref = 6.317166615825466
+   #assert(y <= y_ref + tol)
    
    
